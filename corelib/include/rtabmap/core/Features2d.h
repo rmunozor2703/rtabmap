@@ -37,6 +37,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "rtabmap/core/Parameters.h"
 #include "rtabmap/core/SensorData.h"
 
+#include <vector>
+
+
 #if CV_MAJOR_VERSION < 3
 namespace cv{
 class SURF;
@@ -192,11 +195,18 @@ public:
 			const cv::Mat & disparity,
 			float minDisparity);
 
+
+
+	std::pair<std::vector<cv::KeyPoint>, cv::Mat> filterKeypointsByROI(const std::vector<cv::KeyPoint>& keypoints, const cv::Mat& descriptors, const cv::Rect& zone);
+
+
 	static void limitKeypoints(std::vector<cv::KeyPoint> & keypoints, int maxKeypoints);
 	static void limitKeypoints(std::vector<cv::KeyPoint> & keypoints, cv::Mat & descriptors, int maxKeypoints);
 	static void limitKeypoints(std::vector<cv::KeyPoint> & keypoints, std::vector<cv::Point3f> & keypoints3D, cv::Mat & descriptors, int maxKeypoints);
 	static void limitKeypoints(const std::vector<cv::KeyPoint> & keypoints, std::vector<bool> & inliers, int maxKeypoints);
 	static void limitKeypoints(const std::vector<cv::KeyPoint> & keypoints, std::vector<bool> & inliers, int maxKeypoints, const cv::Size & imageSize, int gridRows, int gridCols);
+
+	
 
 	static cv::Rect computeRoi(const cv::Mat & image, const std::string & roiRatios);
 	static cv::Rect computeRoi(const cv::Mat & image, const std::vector<float> & roiRatios);
@@ -208,6 +218,7 @@ public:
 	int getGridCols() const {return gridCols_;}
 
 public:
+    
 	virtual ~Feature2D();
 
 	std::vector<cv::KeyPoint> generateKeypoints(
@@ -219,6 +230,8 @@ public:
 	std::vector<cv::Point3f> generateKeypoints3D(
 			const SensorData & data,
 			const std::vector<cv::KeyPoint> & keypoints) const;
+
+
 
 	virtual void parseParameters(const ParametersMap & parameters);
 	virtual const ParametersMap & getParameters() const {return parameters_;}

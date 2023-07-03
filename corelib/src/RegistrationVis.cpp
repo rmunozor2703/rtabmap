@@ -710,6 +710,16 @@ Transform RegistrationVis::computeTransformationImpl(
 				}
 			}
 
+			cv::Rect zone(400, 200, 450, 300);
+			// std::cout << (int)kptsFrom.size() << " , " << descriptorsFrom.rows << "before" << std::endl;
+			std::pair<std::vector<cv::KeyPoint>, cv::Mat> filteredDataTo = _detectorFrom->filterKeypointsByROI(kptsTo, descriptorsTo, zone);
+			kptsTo = filteredDataTo.first;
+			descriptorsTo = filteredDataTo.second;
+			std::pair<std::vector<cv::KeyPoint>, cv::Mat> filteredDataFrom = _detectorFrom->filterKeypointsByROI(kptsFrom, descriptorsFrom, zone);
+			kptsFrom = filteredDataFrom.first;
+			descriptorsFrom = filteredDataFrom.second;
+			// std::cout << (int)kptsFrom.size() << " , " << descriptorsFrom.rows << "after" << std::endl;
+
 			// create 3D keypoints
 			std::vector<cv::Point3f> kptsFrom3D;
 			std::vector<cv::Point3f> kptsTo3D;
@@ -743,13 +753,15 @@ Transform RegistrationVis::computeTransformationImpl(
 				UDEBUG("generated kptsFrom3D=%d", (int)kptsFrom3D.size());
 			}
 
+			
+
 			if(!kptsFrom3D.empty() &&
 			   (_detectorFrom->getMinDepth() > 0.0f || _detectorFrom->getMaxDepth() > 0.0f) &&
 			   (!fromSignature.sensorData().cameraModels().empty() || !fromSignature.sensorData().stereoCameraModels().empty())) // Ignore local map from OdometryF2M
 			{
 				_detectorFrom->filterKeypointsByDepth(kptsFrom, descriptorsFrom, kptsFrom3D, _detectorFrom->getMinDepth(), _detectorFrom->getMaxDepth());
 			}
-
+			
 			if(kptsToSource == 2 && kptsTo.size() == toSignature.getWords3().size())
 			{
 				kptsTo3D = toSignature.getWords3();
@@ -778,12 +790,19 @@ Transform RegistrationVis::computeTransformationImpl(
 				kptsTo3D = _detectorTo->generateKeypoints3D(toSignature.sensorData(), kptsTo);
 			}
 
+			// std::cout << (int)kptsTo.size() << " , " << descriptorsTo.rows << "segunda" << std::endl;
+			// _detectorFrom->filterKeypointsByROI(kptsTo, descriptorsTo, zone);
+
 			if(kptsTo3D.size() &&
 		       (_detectorTo->getMinDepth() > 0.0f || _detectorTo->getMaxDepth() > 0.0f) &&
 			   (!toSignature.sensorData().cameraModels().empty() || !toSignature.sensorData().stereoCameraModels().empty())) // Ignore local map from OdometryF2M
 			{
 				_detectorTo->filterKeypointsByDepth(kptsTo, descriptorsTo, kptsTo3D, _detectorTo->getMinDepth(), _detectorTo->getMaxDepth());
+				//  for (const auto& keypoint : keypoints) {
+       			//  	std::cout << "KeyPoint coordinates: (" << keypoint.pt.x << ", " << keypoint.pt.y << ")" << std::endl;
+    			// }
 			}
+			
 
 			UASSERT(kptsFrom.empty() || descriptorsFrom.rows == 0 || int(kptsFrom.size()) == descriptorsFrom.rows);
 

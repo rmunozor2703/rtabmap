@@ -78,6 +78,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef RTABMAP_FASTCV
 #include <fastcv.h>
+#include "Features2d.h"
 #endif
 
 namespace rtabmap {
@@ -153,6 +154,48 @@ void Feature2D::filterKeypointsByDepth(
 		}
 	}
 }
+
+
+ std::pair<std::vector<cv::KeyPoint>, cv::Mat> Feature2D::filterKeypointsByROI(const std::vector<cv::KeyPoint> &keypoints, const cv::Mat &descriptors, const cv::Rect &zone)
+{
+std::vector<cv::KeyPoint> filteredKeypoints;
+    cv::Mat filteredDescriptors;
+	
+    for (size_t i = 0; i < keypoints.size(); i++) {
+		
+		
+        if (zone.contains(keypoints[i].pt))
+			{
+            continue;
+			}
+        filteredKeypoints.push_back(keypoints[i]);
+        filteredDescriptors.push_back(descriptors.row(i));
+    }
+	
+	return std::make_pair(filteredKeypoints, filteredDescriptors);
+}
+// std::pair<std::vector<cv::KeyPoint>, cv::Mat> Features2D::filterKeypointsByROI(const std::vector<cv::KeyPoint>& keypoints, const cv::Mat& descriptors, const cv::Rect& zone) {
+//     std::vector<cv::KeyPoint> filteredKeypoints;
+//     cv::Mat filteredDescriptors;
+	
+//     for (size_t i = 0; i < keypoints.size(); i++) {
+		
+// 		std::cout << "x: " << keypoints[i].pt.x << ", y: " << keypoints[i].pt.y << ", size: " << keypoints[i].size << std::endl;
+//         if (!zone.contains(keypoints[i].pt))
+// 			std::cout << "enter" << std::endl;
+//             continue;
+
+//         filteredKeypoints.push_back(keypoints[i]);
+//         filteredDescriptors.push_back(descriptors.row(i));
+//     }
+
+//     keypoints = filteredKeypoints;
+//     descriptors = filteredDescriptors;
+
+// 	return std::make_pair(keypoints, descriptors);
+// }
+
+
 
 void Feature2D::filterKeypointsByDepth(
 		std::vector<cv::KeyPoint> & keypoints,
@@ -268,7 +311,8 @@ void Feature2D::filterKeypointsByDisparity(
 	}
 }
 
-void Feature2D::limitKeypoints(std::vector<cv::KeyPoint> & keypoints, int maxKeypoints)
+void Feature2D::limitKeypoints(std::vector<cv::KeyPoint> &keypoints, int maxKeypoints)
+   
 {
 	cv::Mat descriptors;
 	limitKeypoints(keypoints, descriptors, maxKeypoints);
