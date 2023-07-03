@@ -156,10 +156,11 @@ void Feature2D::filterKeypointsByDepth(
 }
 
 
- std::pair<std::vector<cv::KeyPoint>, cv::Mat> Feature2D::filterKeypointsByROI(const std::vector<cv::KeyPoint> &keypoints, const cv::Mat &descriptors, const cv::Rect &zone)
+// std::pair<std::vector<cv::KeyPoint>, cv::Mat> Feature2D::filterKeypointsByROI(const std::vector<cv::KeyPoint> &keypoints, const cv::Mat &descriptors, const cv::Rect &zone)
+std::vector<cv::KeyPoint> Feature2D::filterKeypointsByROI(const std::vector<cv::KeyPoint> &keypoints, const cv::Rect &zone)
 {
 std::vector<cv::KeyPoint> filteredKeypoints;
-    cv::Mat filteredDescriptors;
+    // cv::Mat filteredDescriptors;
 	
     for (size_t i = 0; i < keypoints.size(); i++) {
 		
@@ -169,31 +170,12 @@ std::vector<cv::KeyPoint> filteredKeypoints;
             continue;
 			}
         filteredKeypoints.push_back(keypoints[i]);
-        filteredDescriptors.push_back(descriptors.row(i));
+        // filteredDescriptors.push_back(descriptors.row(i));
     }
 	
-	return std::make_pair(filteredKeypoints, filteredDescriptors);
+	// return std::make_pair(filteredKeypoints, filteredDescriptors);
+	return filteredKeypoints;
 }
-// std::pair<std::vector<cv::KeyPoint>, cv::Mat> Features2D::filterKeypointsByROI(const std::vector<cv::KeyPoint>& keypoints, const cv::Mat& descriptors, const cv::Rect& zone) {
-//     std::vector<cv::KeyPoint> filteredKeypoints;
-//     cv::Mat filteredDescriptors;
-	
-//     for (size_t i = 0; i < keypoints.size(); i++) {
-		
-// 		std::cout << "x: " << keypoints[i].pt.x << ", y: " << keypoints[i].pt.y << ", size: " << keypoints[i].size << std::endl;
-//         if (!zone.contains(keypoints[i].pt))
-// 			std::cout << "enter" << std::endl;
-//             continue;
-
-//         filteredKeypoints.push_back(keypoints[i]);
-//         filteredDescriptors.push_back(descriptors.row(i));
-//     }
-
-//     keypoints = filteredKeypoints;
-//     descriptors = filteredDescriptors;
-
-// 	return std::make_pair(keypoints, descriptors);
-// }
 
 
 
@@ -479,11 +461,13 @@ Feature2D::Feature2D(const ParametersMap & parameters) :
 		_maxDepth(Parameters::defaultKpMaxDepth()),
 		_minDepth(Parameters::defaultKpMinDepth()),
 		_roiRatios(std::vector<float>(4, 0.0f)),
+		_roiFilter(std::vector<float>(4, 0)),
 		_subPixWinSize(Parameters::defaultKpSubPixWinSize()),
 		_subPixIterations(Parameters::defaultKpSubPixIterations()),
 		_subPixEps(Parameters::defaultKpSubPixEps()),
 		gridRows_(Parameters::defaultKpGridRows()),
 		gridCols_(Parameters::defaultKpGridCols())
+		
 {
 	_stereo = new Stereo(parameters);
 	this->parseParameters(parameters);
@@ -539,6 +523,36 @@ void Feature2D::parseParameters(const ParametersMap & parameters)
 			}
 		}
 	}
+
+	// convert ROI Filter from string to vector
+	if((iter=parameters.find(Parameters::kKpRoiFilter())) != parameters.end())
+	{
+		std::list<std::string> strValues = uSplit(iter->second, ' ');
+		if(strValues.size() != 4)
+		{
+			ULOGGER_ERROR("The number of values must be 4 (roi=\"%s\")", iter->second.c_str());
+		}
+		else
+		{
+			std::vector<float> tmpValues(4);
+			unsigned int i=0;
+			for(std::list<std::string>::iterator jter = strValues.begin(); jter!=strValues.end(); ++jter)
+			{
+				tmpValues[i] = uStr2Float(*jter);
+				++i;
+			}
+
+			if(tmpValues[0] > 0 && tmpValues[1] > 0 && tmpValues[2] > 1.0f && tmpValues[3])
+			{
+				_roiFilter = tmpValues;
+			}
+			else
+			{
+				ULOGGER_ERROR("The roi values for the filter are not valid (roi=\"%s\")", iter->second.c_str());
+			}
+		}
+	}
+
 
 	//stereo
 	UASSERT(_stereo != 0);
@@ -766,7 +780,7 @@ std::vector<cv::KeyPoint> Feature2D::generateKeypoints(const cv::Mat & image, co
 	{
 		globalRoi = cv::Rect(0,0,image.cols, image.rows);
 	}
-
+	
 	// Get keypoints
 	int rowSize = globalRoi.height / gridRows_;
 	int colSize = globalRoi.width / gridCols_;
@@ -790,6 +804,16 @@ std::vector<cv::KeyPoint> Feature2D::generateKeypoints(const cv::Mat & image, co
 			}
 			keypoints.insert( keypoints.end(), sub_keypoints.begin(), sub_keypoints.end() );
 		}
+	}
+	int x = _roiFilter[0];
+	int y = _roiFilter[1];
+	int width = _roiFilter[2] - _roiFilter[0];
+	int height = _roiFilter[3] - _roiFilter[1];
+
+	if (x > 0 || y > 0 || width > 0 || height > 0) {
+		cv::Rect seccionToFilter(x, y, width, height);
+		
+		keypoints = filterKeypointsByROI(keypoints, seccionToFilter);
 	}
 	UDEBUG("Keypoints extraction time = %f s, keypoints extracted = %d (grid=%dx%d, mask empty=%d)",
 			timer.ticks(), keypoints.size(), gridCols_, gridRows_,  mask.empty()?1:0);

@@ -259,7 +259,7 @@ class RTABMAP_CORE_EXPORT Parameters
     RTABMAP_PARAM(Kp, SubPixEps,                double, 0.02, "See cv::cornerSubPix().");
     RTABMAP_PARAM(Kp, GridRows,                 int, 1,       uFormat("Number of rows of the grid used to extract uniformly \"%s / grid cells\" features from each cell.", kKpMaxFeatures().c_str()));
     RTABMAP_PARAM(Kp, GridCols,                 int, 1,       uFormat("Number of columns of the grid used to extract uniformly \"%s / grid cells\" features from each cell.", kKpMaxFeatures().c_str()));
-
+    RTABMAP_PARAM_STR(Kp, RoiFilter,       "0 0 0 0", "Region of interest ratios [x, y, width, height].");
     //Database
     RTABMAP_PARAM(DbSqlite3, InMemory,     bool, false,      "Using database in the memory instead of a file on the hard disk.");
     RTABMAP_PARAM(DbSqlite3, CacheSize, unsigned int, 10000, "Sqlite cache size (default is 2000).");
@@ -635,7 +635,7 @@ class RTABMAP_CORE_EXPORT Parameters
 #else
     RTABMAP_PARAM(Vis, BundleAdjustment,         int, 0,      "Optimization with bundle adjustment: 0=disabled, 1=g2o, 2=cvsba, 3=Ceres.");
 #endif
-
+    RTABMAP_PARAM_STR(Vis, RoiFilter,       "0 0 0 0", "Region of interest ratios [x, y, width, height].");
     // Features matching approaches
     RTABMAP_PARAM_STR(PyMatcher, Path,       "",           "Path to python script file (see available ones in rtabmap/corelib/src/python/*). See the header to see where the script should be copied.");
 	RTABMAP_PARAM(PyMatcher, Iterations,     int, 20,      "Sinkhorn iterations. Used by SuperGlue.");

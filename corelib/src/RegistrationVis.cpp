@@ -44,6 +44,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <rtabmap/utilite/UMath.h>
 #include <opencv2/core/core_c.h>
 
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <vector>
+
 #if defined(HAVE_OPENCV_XFEATURES2D) && (CV_MAJOR_VERSION > 3 || (CV_MAJOR_VERSION==3 && CV_MINOR_VERSION >=4 && CV_SUBMINOR_VERSION >= 1))
 #include <opencv2/xfeatures2d.hpp> // For GMS matcher
 #endif
@@ -107,6 +112,7 @@ RegistrationVis::RegistrationVis(const ParametersMap & parameters, Registration 
 	uInsert(_featureParameters, ParametersPair(Parameters::kKpGridRows(), _featureParameters.at(Parameters::kVisGridRows())));
 	uInsert(_featureParameters, ParametersPair(Parameters::kKpGridCols(), _featureParameters.at(Parameters::kVisGridCols())));
 	uInsert(_featureParameters, ParametersPair(Parameters::kKpNewWordsComparedTogether(), "false"));
+	uInsert(_featureParameters, ParametersPair(Parameters::kKpRoiFilter(), _featureParameters.at(Parameters::kVisRoiFilter())));
 
 	this->parseParameters(parameters);
 }
@@ -258,6 +264,10 @@ void RegistrationVis::parseParameters(const ParametersMap & parameters)
 	if(uContains(parameters, Parameters::kVisGridCols()))
 	{
 		uInsert(_featureParameters, ParametersPair(Parameters::kKpGridCols(), parameters.at(Parameters::kVisGridCols())));
+	}
+	if(uContains(parameters, Parameters::kVisRoiFilter()))  // added for filtering
+	{
+		uInsert(_featureParameters, ParametersPair(Parameters::kKpRoiFilter(), parameters.at(Parameters::kVisRoiFilter())));
 	}
 
 	delete _detectorFrom;
@@ -709,16 +719,35 @@ Transform RegistrationVis::computeTransformationImpl(
 					descriptorsTo = _detectorTo->generateDescriptors(imageTo, kptsTo);
 				}
 			}
+			
+			//keypoints and descriptors filter
+			// std::string roiFilter = _featureParameters.at(Parameters::kKpRoiFilter());
+			// std::stringstream ss(roiFilter);
+			// std::vector<int> numbers;
+			
+			// int number;
+			// while (ss >> number) {
+			// 	numbers.push_back(number);
+			// 	ss.ignore();
+			// }
+			
+			// int x = numbers[0];
+			// int y = numbers[1];
+			// int width = numbers[2];
+			// int height = numbers[3];
 
-			cv::Rect zone(400, 200, 450, 300);
-			// std::cout << (int)kptsFrom.size() << " , " << descriptorsFrom.rows << "before" << std::endl;
-			std::pair<std::vector<cv::KeyPoint>, cv::Mat> filteredDataTo = _detectorFrom->filterKeypointsByROI(kptsTo, descriptorsTo, zone);
-			kptsTo = filteredDataTo.first;
-			descriptorsTo = filteredDataTo.second;
-			std::pair<std::vector<cv::KeyPoint>, cv::Mat> filteredDataFrom = _detectorFrom->filterKeypointsByROI(kptsFrom, descriptorsFrom, zone);
-			kptsFrom = filteredDataFrom.first;
-			descriptorsFrom = filteredDataFrom.second;
-			// std::cout << (int)kptsFrom.size() << " , " << descriptorsFrom.rows << "after" << std::endl;
+			// if (x > 0 || y > 0 || width > 0 || height > 0) {
+			// 	cv::Rect seccionToFilter(x, y, width, height);
+				
+			// 	std::pair<std::vector<cv::KeyPoint>, cv::Mat> filteredDataTo = _detectorTo->filterKeypointsByROI(kptsTo, descriptorsTo, seccionToFilter);
+			// 	kptsTo = filteredDataTo.first;
+			// 	descriptorsTo = filteredDataTo.second;
+
+			// 	std::pair<std::vector<cv::KeyPoint>, cv::Mat> filteredDataFrom = _detectorFrom->filterKeypointsByROI(kptsFrom, descriptorsFrom, seccionToFilter);
+			// 	kptsFrom = filteredDataFrom.first;
+			// 	descriptorsFrom = filteredDataFrom.second;
+			// }
+			
 
 			// create 3D keypoints
 			std::vector<cv::Point3f> kptsFrom3D;
@@ -790,17 +819,11 @@ Transform RegistrationVis::computeTransformationImpl(
 				kptsTo3D = _detectorTo->generateKeypoints3D(toSignature.sensorData(), kptsTo);
 			}
 
-			// std::cout << (int)kptsTo.size() << " , " << descriptorsTo.rows << "segunda" << std::endl;
-			// _detectorFrom->filterKeypointsByROI(kptsTo, descriptorsTo, zone);
-
 			if(kptsTo3D.size() &&
 		       (_detectorTo->getMinDepth() > 0.0f || _detectorTo->getMaxDepth() > 0.0f) &&
 			   (!toSignature.sensorData().cameraModels().empty() || !toSignature.sensorData().stereoCameraModels().empty())) // Ignore local map from OdometryF2M
 			{
 				_detectorTo->filterKeypointsByDepth(kptsTo, descriptorsTo, kptsTo3D, _detectorTo->getMinDepth(), _detectorTo->getMaxDepth());
-				//  for (const auto& keypoint : keypoints) {
-       			//  	std::cout << "KeyPoint coordinates: (" << keypoint.pt.x << ", " << keypoint.pt.y << ")" << std::endl;
-    			// }
 			}
 			
 

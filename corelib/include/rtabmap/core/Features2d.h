@@ -196,8 +196,7 @@ public:
 			float minDisparity);
 
 
-
-	std::pair<std::vector<cv::KeyPoint>, cv::Mat> filterKeypointsByROI(const std::vector<cv::KeyPoint>& keypoints, const cv::Mat& descriptors, const cv::Rect& zone);
+	static std::vector<cv::KeyPoint> filterKeypointsByROI(const std::vector<cv::KeyPoint> &keypoints, const cv::Rect &zone);
 
 
 	static void limitKeypoints(std::vector<cv::KeyPoint> & keypoints, int maxKeypoints);
@@ -250,6 +249,7 @@ private:
 	float _maxDepth; // 0=inf
 	float _minDepth;
 	std::vector<float> _roiRatios; // size 4
+	std::vector<float> _roiFilter; // size 4
 	int _subPixWinSize;
 	int _subPixIterations;
 	double _subPixEps;
